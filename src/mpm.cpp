@@ -6,6 +6,14 @@
 #include <numeric>
 #include <vector>
 
+// --- PATCH: Fix for Windows/MSVC ---
+// ssize_t is not defined on Windows by default.
+#ifdef _MSC_VER
+#include <cstddef>
+using ssize_t = std::ptrdiff_t;
+#endif
+// -----------------------------------
+
 #define MPM_CUTOFF 0.93
 #define MPM_SMALL_CUTOFF 0.5
 #define MPM_LOWER_PITCH_CUTOFF 80.0

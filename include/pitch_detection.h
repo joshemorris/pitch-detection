@@ -2,11 +2,20 @@
 #define PITCH_DETECTION_H
 
 #include <complex>
-#include <ffts/ffts.h>
-#include <mlpack/core.hpp>
-#include <mlpack/methods/hmm/hmm.hpp>
 #include <stdexcept>
 #include <vector>
+
+// --- PATCH: MLPack 4 Compatibility ---
+// MLPack 4 modularized the library, so we must explicitly include 
+// the distribution header which is no longer in core.hpp
+#include <mlpack/core.hpp>
+// Fix: Use 'distributions' directory, not 'dists'
+#include <mlpack/core/distributions/discrete_distribution.hpp>
+#include <mlpack/methods/hmm/hmm.hpp>
+
+// --- PATCH: FFTS Include ---
+// This relies on the shim directory we created in CMakeLists.txt
+#include <ffts/ffts.h>
 
 /* ignore me plz */
 namespace detail
@@ -15,7 +24,8 @@ template <typename T>
 std::vector<size_t>
 bin_pitches(const std::vector<std::pair<T, T>>);
 
-mlpack::hmm::HMM<mlpack::distribution::DiscreteDistribution>
+// Fix: Flat namespace for HMM and DiscreteDistribution
+mlpack::HMM<mlpack::DiscreteDistribution<>>
 build_hmm();
 
 void
@@ -25,10 +35,10 @@ init_pitch_bins();
 /*
  * The pitch namespace contains the functions:
  *
- * 	pitch::mpm(data, sample_rate)
- * 	pitch::yin(data, sample_rate)
- * 	pitch::pyin(data, sample_rate)
- * 	pitch::pmpm(data, sample_rate)
+ * pitch::mpm(data, sample_rate)
+ * pitch::yin(data, sample_rate)
+ * pitch::pyin(data, sample_rate)
+ * pitch::pmpm(data, sample_rate)
  *
  * It will auto-allocate any buffers.
  */
@@ -78,7 +88,9 @@ class BaseAlloc
 	std::vector<std::complex<float>> out_im;
 	ffts_plan_t *fft_forward;
 	ffts_plan_t *fft_backward;
-	mlpack::hmm::HMM<mlpack::distribution::DiscreteDistribution> hmm;
+    
+    // Fix: Flat namespace for HMM and DiscreteDistribution
+	mlpack::HMM<mlpack::DiscreteDistribution<>> hmm;
 
 	BaseAlloc(long audio_buffer_size)
 	    : nfft(audio_buffer_size),
@@ -182,9 +194,10 @@ template <typename T>
 void
 acorr_r(const std::vector<T> &, pitch_alloc::BaseAlloc *);
 
+// Fix: Flat namespace for HMM and DiscreteDistribution
 template <typename T>
 T
-pitch_from_hmm(mlpack::hmm::HMM<mlpack::distribution::DiscreteDistribution>,
+pitch_from_hmm(mlpack::HMM<mlpack::DiscreteDistribution<>>,
     const std::vector<std::pair<T, T>>);
 } // namespace util
 

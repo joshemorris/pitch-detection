@@ -5,6 +5,14 @@
 #include <tuple>
 #include <vector>
 
+// --- PATCH: Fix for Windows/MSVC ---
+// ssize_t is not defined on Windows by default.
+#ifdef _MSC_VER
+#include <cstddef>
+using ssize_t = std::ptrdiff_t;
+#endif
+// -----------------------------------
+
 #define YIN_THRESHOLD 0.20
 #define PYIN_PA 0.01
 #define PYIN_N_THRESHOLDS 100

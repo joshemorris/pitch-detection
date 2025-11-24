@@ -6,12 +6,19 @@ list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
 
-# use this for dependency graph generation
-#set_property(GLOBAL PROPERTY GRAPHVIZ_EXPORT_TARGETS TRUE)
-
-set(CMAKE_CXX_FLAGS "-Wall -Wextra -ansi -pedantic -fext-numeric-literals -fopenmp")
-set(CMAKE_CXX_FLAGS_DEBUG "-g")
-set(CMAKE_CXX_FLAGS_RELEASE "-O3 -march=native -flto")
+# --- PATCH: Handle MSVC vs GCC/Clang Flags ---
+if(MSVC)
+    # MSVC specific flags
+    add_compile_options(/W3)
+    add_compile_definitions(_USE_MATH_DEFINES) # Required for M_PI etc.
+    
+    # NOTE: We explicitly DO NOT link OpenMP for MSVC.
+    # MSVC supports OpenMP 2.0, but mlpack requires OpenMP 3.1+.
+    # Linking OpenMP here triggers the error: "mlpack requires OpenMP 3.1+; compile without /OPENMP"
+else()
+    # Original flags for GCC/Clang
+    set(CMAKE_CXX_FLAGS "-Wall -Wextra -ansi -pedantic -fext-numeric-literals -fopenmp")
+endif()
 
 include_directories(include)
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/test)
@@ -19,14 +26,20 @@ include_directories(${CMAKE_CURRENT_SOURCE_DIR}/test)
 find_package(mlpack REQUIRED)
 find_package(FFTS REQUIRED)
 
-# Assuming FFTS does not have a built-in find module
-
 # Add the library target
 file(GLOB_RECURSE LIB_SOURCES "src/*.cpp")
-add_library(pitch_detection SHARED ${LIB_SOURCES})
+add_library(pitch_detection STATIC ${LIB_SOURCES})
 target_link_libraries(pitch_detection PUBLIC
     ${MLPACK_LIBRARIES}
     ${FFTS_LIBRARIES})
+
+# --- PATCH: Only Link OpenMP for Non-MSVC ---
+if(NOT MSVC)
+    find_package(OpenMP)
+    if(OpenMP_CXX_FOUND)
+        target_link_libraries(pitch_detection PUBLIC OpenMP::OpenMP_CXX)
+    endif()
+endif()
 
 find_package(gflags QUIET)
 find_package(libnyquist QUIET)
